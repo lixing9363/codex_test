@@ -99,7 +99,6 @@ uvicorn app.main:app --reload
 ```
 
 ### 4) 启动 Celery Worker
-
 ```bash
 celery -A app.tasks.celery_app.celery_app worker -l info -Q default,emails
 ```
