@@ -1,0 +1,51 @@
+services:
+  api:
+    build: .
+    container_name: fastapi_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+
+  worker:
+    build: .
+    container_name: fastapi_worker
+    command: celery -A app.tasks.celery_app.celery_app worker -l info -Q default,emails
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+
+  mysql:
+    image: mysql:8.0
+    container_name: fastapi_mysql
+    restart: always
+    profiles: ["local-infra"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DB:-fastapi_demo}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD:-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi_redis
+    profiles: ["local-infra"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:
